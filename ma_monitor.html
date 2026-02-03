@@ -17,6 +17,19 @@
         .glass-card { @apply backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 rounded-3xl transition-all shadow-inner bg-white/80 dark:bg-slate-800/80; }
         .bg-monitor { @apply bg-blue-50/70 dark:bg-blue-950/10; }
         .active-tab { background: #3b82f6 !important; color: white !important; }
+        .ma-line {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
+            border-radius: 50%;
+        }
+        .ema20 { background-color: #3b82f6; }
+        .ema60 { background-color: #ef4444; }
+        .ema120 { background-color: #10b981; }
+        .sma20 { background-color: #8b5cf6; }
+        .sma60 { background-color: #f59e0b; }
+        .sma120 { background-color: #ec4899; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 min-h-screen text-slate-800 dark:text-slate-200 p-4 md:p-8 overflow-x-hidden transition-colors duration-300 relative">
@@ -42,13 +55,15 @@
 
         <div class="flex justify-center mb-6">
             <div class="flex bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border dark:border-slate-800 shadow-inner max-w-md w-full">
+                <button onclick="switchInterval('1m')" id="btn-1m" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1M</button>
+                <button onclick="switchInterval('5m')" id="btn-5m" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">5M</button>
                 <button onclick="switchInterval('1h')" id="btn-1h" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1H</button>
                 <button onclick="switchInterval('4h')" id="btn-4h" class="flex-1 py-2 text-xs font-bold rounded-lg active-tab">4H</button>
                 <button onclick="switchInterval('1d')" id="btn-1d" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1D</button>
             </div>
         </div>
         
-        <div id="container" class="grid grid-cols-1 gap-6"></div>
+        <div id="container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         
         <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
             <div class="flex items-center gap-2 mb-2">
@@ -63,6 +78,8 @@
             'zh': { 
                 'title': '均线监控',
                 'subtitle': '移动平均线分析工具',
+                'interval1m': '1分钟',
+                'interval5m': '5分钟',
                 'interval1h': '1小时',
                 'interval4h': '4小时',
                 'interval1d': '日线',
@@ -77,12 +94,17 @@
                 'deathCross': '死叉',
                 'trendUp': '上升趋势',
                 'trendDown': '下降趋势',
+                'bullish': '多头排列',
+                'bearish': '空头排列',
+                'consolidating': '横盘整理',
                 'usageGuide': '使用说明',
                 'guideText': '图表显示了各种移动平均线指标，帮助分析趋势方向。EMA对价格变化反应更快，SMA提供平滑的趋势参考。当短期均线上穿长期均线时形成金叉，反之则为死叉。'
             }, 
             'en': { 
                 'title': 'Moving Average Monitor',
                 'subtitle': 'Technical Analysis Tool',
+                'interval1m': '1M',
+                'interval5m': '5M',
                 'interval1h': '1H',
                 'interval4h': '4H',
                 'interval1d': '1D',
@@ -97,6 +119,9 @@
                 'deathCross': 'Death Cross',
                 'trendUp': 'Uptrend',
                 'trendDown': 'Downtrend',
+                'bullish': 'Bullish',
+                'bearish': 'Bearish',
+                'consolidating': 'Consolidating',
                 'usageGuide': 'Usage Guide',
                 'guideText': 'The chart displays various moving average indicators to help analyze trend direction. EMA responds faster to price changes, while SMA provides a smoother trend reference. A golden cross forms when a short-term MA crosses above a long-term MA, and vice versa for a death cross.'
             } 
@@ -123,9 +148,11 @@
             document.getElementById('lang-zh').className = currentLang === 'zh' ? 'text-white' : 'text-slate-500';
             const t = i18n[currentLang];
             document.getElementById('page-title').textContent = `${t.title} - BoxArt`;
-            document.getElementById('btn-1h').textContent = t.interval1h;
-            document.getElementById('btn-4h').textContent = t.interval4h;
-            document.getElementById('btn-1d').textContent = t.interval1d;
+            document.getElementById('btn-1m').textContent = t.interval1m.split('')[0];
+            document.getElementById('btn-5m').textContent = t.interval5m.split('')[0];
+            document.getElementById('btn-1h').textContent = t.interval1h.split('')[0];
+            document.getElementById('btn-4h').textContent = t.interval4h.split('')[0];
+            document.getElementById('btn-1d').textContent = t.interval1d.split('')[0];
             updateUsageGuide();
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -139,40 +166,79 @@
             document.getElementById(`btn-${currentInterval}`).classList.remove('text-slate-500');
         }
 
-        // Generate mock data for demonstration
-        function generateMockData() {
+        // Calculate EMA
+        function calculateEMA(data, period) {
+            if (data.length < period) return null;
+            
+            const k = 2 / (period + 1);
+            let ema = data.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+            
+            for (let i = period; i < data.length; i++) {
+                ema = data[i] * k + ema * (1 - k);
+            }
+            
+            return ema;
+        }
+
+        // Calculate SMA
+        function calculateSMA(data, period) {
+            if (data.length < period) return null;
+            
+            const sum = data.slice(-period).reduce((sum, val) => sum + val, 0);
+            return sum / period;
+        }
+
+        // Fetch data from Binance API
+        async function fetchData() {
             const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT'];
             const data = {};
             
-            symbols.forEach(symbol => {
-                // Base price with some variation
-                let basePrice = symbol.startsWith('BTC') ? 45000 : 
-                               symbol.startsWith('ETH') ? 2800 : 
-                               symbol.startsWith('BNB') ? 350 : 100;
-                
-                basePrice += (Math.random() - 0.5) * basePrice * 0.05; // ±2.5% random variation
-                
-                // Calculate moving averages
-                const sma20 = basePrice * (0.98 + Math.random() * 0.04); // Slightly varied
-                const sma60 = basePrice * (0.97 + Math.random() * 0.06);
-                const sma120 = basePrice * (0.96 + Math.random() * 0.08);
-                const ema20 = basePrice * (0.98 + Math.random() * 0.04);
-                const ema60 = basePrice * (0.97 + Math.random() * 0.06);
-                const ema120 = basePrice * (0.96 + Math.random() * 0.08);
-                
-                data[symbol] = {
-                    symbol: symbol.replace('USDT', '/USDT'),
-                    price: basePrice,
-                    ema20: ema20,
-                    ema60: ema60,
-                    ema120: ema120,
-                    sma20: sma20,
-                    sma60: sma60,
-                    sma120: sma120
-                };
-            });
+            for (const symbol of symbols) {
+                try {
+                    // Fetch kline data
+                    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${currentInterval}&limit=200`);
+                    const klines = await response.json();
+                    
+                    // Process kline data
+                    const prices = klines.map(k => parseFloat(k[4])); // Close prices
+                    
+                    // Calculate moving averages
+                    const ema20 = calculateEMA(prices, 20);
+                    const ema60 = calculateEMA(prices, 60);
+                    const ema120 = calculateEMA(prices, 120);
+                    const sma20 = calculateSMA(prices, 20);
+                    const sma60 = calculateSMA(prices, 60);
+                    const sma120 = calculateSMA(prices, 120);
+                    const currentPrice = prices[prices.length - 1];
+                    
+                    data[symbol] = {
+                        symbol: symbol.replace('USDT', '/USDT'),
+                        price: currentPrice,
+                        ema20: ema20,
+                        ema60: ema60,
+                        ema120: ema120,
+                        sma20: sma20,
+                        sma60: sma60,
+                        sma120: sma120
+                    };
+                } catch (error) {
+                    console.error(`Error fetching data for ${symbol}:`, error);
+                    // Provide fallback data
+                    data[symbol] = {
+                        symbol: symbol.replace('USDT', '/USDT'),
+                        price: 0,
+                        ema20: null,
+                        ema60: null,
+                        ema120: null,
+                        sma20: null,
+                        sma60: null,
+                        sma120: null
+                    };
+                }
+            }
             
-            return data;
+            allData = data;
+            render();
         }
         
         function updateUsageGuide() {
@@ -189,31 +255,49 @@
             });
             document.getElementById(`btn-${interval}`).classList.add('active-tab');
             document.getElementById(`btn-${interval}`).classList.remove('text-slate-500');
-            render();
+            fetchData(); // Fetch new data for the selected interval
+        }
+        
+        function getTrendDescription(item) {
+            const t = i18n[currentLang];
+            const maValues = [item.ema20, item.ema60, item.ema120, item.sma20, item.sma60, item.sma120].filter(v => v !== null);
+            
+            if (maValues.length < 6) return t.consolidating;
+            
+            // Check for bullish pattern (all MAs ordered from high to low: price, short-term to long-term)
+            if (item.price > item.ema20 && item.ema20 > item.ema60 && item.ema60 > item.ema120 &&
+                item.ema20 > item.sma20 && item.ema60 > item.sma60 && item.ema120 > item.sma120 &&
+                item.sma20 > item.sma60 && item.sma60 > item.sma120) {
+                return t.bullish;
+            }
+            // Check for bearish pattern (all MAs ordered from low to high: price, short-term to long-term)
+            else if (item.price < item.ema20 && item.ema20 < item.ema60 && item.ema60 < item.ema120 &&
+                     item.ema20 < item.sma20 && item.ema60 < item.sma60 && item.ema120 < item.sma120 &&
+                     item.sma20 < item.sma60 && item.sma60 < item.sma120) {
+                return t.bearish;
+            }
+            else {
+                return t.consolidating;
+            }
         }
         
         function render() {
-            // In a real implementation, we would fetch live data from an API
-            // For now, we'll use mock data
-            const mockData = generateMockData();
             const container = document.getElementById('container');
-            const items = Object.values(mockData);
+            const symbols = Object.keys(allData);
             const t = i18n[currentLang];
             
-            container.innerHTML = items.map(item => {
-                // Determine trend based on moving averages
-                let trend = '';
-                let trendColor = '';
+            container.innerHTML = symbols.map(symbol => {
+                const item = allData[symbol];
                 
-                if(item.price > item.ema20 && item.ema20 > item.ema60 && item.ema60 > item.ema120) {
-                    trend = t.trendUp;
+                if (!item) return '';
+                
+                const trend = getTrendDescription(item);
+                let trendColor = 'text-gray-500';
+                
+                if (trend.includes(t.bullish) || (currentLang === 'en' && trend.includes('Bullish'))) {
                     trendColor = 'text-green-500';
-                } else if(item.price < item.ema20 && item.ema20 < item.ema60 && item.ema60 < item.ema120) {
-                    trend = t.trendDown;
+                } else if (trend.includes(t.bearish) || (currentLang === 'en' && trend.includes('Bearish'))) {
                     trendColor = 'text-red-500';
-                } else {
-                    trend = '横盘';
-                    trendColor = 'text-yellow-500';
                 }
                 
                 return `
@@ -229,33 +313,64 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.ema20}</div>
-                            <div class="font-mono font-bold">$${item.ema20.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div class="mb-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line ema20"></span>${t.ema20}
+                            </div>
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line ema60"></span>${t.ema60}
+                            </div>
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line ema120"></span>${t.ema120}
+                            </div>
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line sma20"></span>${t.sma20}
+                            </div>
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line sma60"></span>${t.sma60}
+                            </div>
+                            <div class="flex items-center text-[9px]">
+                                <span class="ma-line sma120"></span>${t.sma120}
+                            </div>
                         </div>
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.ema60}</div>
-                            <div class="font-mono font-bold">$${item.ema60.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        </div>
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.ema120}</div>
-                            <div class="font-mono font-bold">$${item.ema120.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        </div>
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.sma20}</div>
-                            <div class="font-mono font-bold">$${item.sma20.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        
+                        <div class="relative h-2 bg-gradient-to-r from-green-500/20 via-yellow-500/20 to-red-500/20 rounded-full overflow-hidden border dark:border-slate-800">
+                            <div class="absolute inset-0 flex">
+                                ${item.ema20 ? `<div class="ema20 w-1 h-full -ml-0.5" style="left: ${(item.ema20/item.price)*100 > 0 ? Math.min((item.ema20/item.price)*100, 100) : 0}%"></div>` : ''}
+                                ${item.ema60 ? `<div class="ema60 w-1 h-full -ml-0.5" style="left: ${(item.ema60/item.price)*100 > 0 ? Math.min((item.ema60/item.price)*100, 100) : 0}%"></div>` : ''}
+                                ${item.ema120 ? `<div class="ema120 w-1 h-full -ml-0.5" style="left: ${(item.ema120/item.price)*100 > 0 ? Math.min((item.ema120/item.price)*100, 100) : 0}%"></div>` : ''}
+                                ${item.sma20 ? `<div class="sma20 w-1 h-full -ml-0.5" style="left: ${(item.sma20/item.price)*100 > 0 ? Math.min((item.sma20/item.price)*100, 100) : 0}%"></div>` : ''}
+                                ${item.sma60 ? `<div class="sma60 w-1 h-full -ml-0.5" style="left: ${(item.sma60/item.price)*100 > 0 ? Math.min((item.sma60/item.price)*100, 100) : 0}%"></div>` : ''}
+                                ${item.sma120 ? `<div class="sma120 w-1 h-full -ml-0.5" style="left: ${(item.sma120/item.price)*100 > 0 ? Math.min((item.sma120/item.price)*100, 100) : 0}%"></div>` : ''}
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.sma60}</div>
-                            <div class="font-mono font-bold">$${item.sma60.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.ema20}</div>
+                            <div class="font-mono text-sm">${item.ema20 ? '$' + item.ema20.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
                         </div>
-                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-3">
-                            <div class="text-[9px] text-slate-500 font-bold mb-1">${t.sma120}</div>
-                            <div class="font-mono font-bold">$${item.sma120.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.ema60}</div>
+                            <div class="font-mono text-sm">${item.ema60 ? '$' + item.ema60.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.ema120}</div>
+                            <div class="font-mono text-sm">${item.ema120 ? '$' + item.ema120.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.sma20}</div>
+                            <div class="font-mono text-sm">${item.sma20 ? '$' + item.sma20.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.sma60}</div>
+                            <div class="font-mono text-sm">${item.sma60 ? '$' + item.sma60.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-slate-700/50 rounded-xl p-2">
+                            <div class="text-[8px] text-slate-500 font-bold mb-1">${t.sma120}</div>
+                            <div class="font-mono text-sm">${item.sma120 ? '$' + item.sma120.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</div>
                         </div>
                     </div>
                 </div>
@@ -265,10 +380,10 @@
         
         updateThemeIcons();
         updateLangUI();
-        render();
+        fetchData(); // Initial data fetch
         
-        // Simulate live updates
-        setInterval(render, 30000);
+        // Refresh data every 30 seconds
+        setInterval(fetchData, 30000);
     </script>
 </body>
 </html>

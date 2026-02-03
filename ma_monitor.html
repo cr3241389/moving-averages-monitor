@@ -341,12 +341,31 @@
                 return;
             }
 
-            const avgValue = currentValues.reduce((sum, val) => sum + val, 0) / currentValues.length;
-            const variance = currentValues.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) / currentValues.length;
-            const stdDev = Math.sqrt(variance);
+            // 计算相邻均线间的差距
+            const sortedValues = [...currentValues].sort((a, b) => a - b);
+            let totalDistance = 0;
+            let maxPossibleDistance = 0;
             
-            // 密集度评分（0-100），标准差越小越密集
-            const densityScore = Math.max(0, Math.min(100, (1 - stdDev / avgValue) * 1000));
+            // 计算相邻值之间的距离总和
+            for (let i = 1; i < sortedValues.length; i++) {
+                totalDistance += Math.abs(sortedValues[i] - sortedValues[i-1]);
+            }
+            
+            // 计算最大可能的距离（假设均线分布很散）
+            const minValue = sortedValues[0];
+            const maxValue = sortedValues[sortedValues.length - 1];
+            maxPossibleDistance = maxValue - minValue;
+            
+            // 如果所有均线完全重叠，密集度为100%，否则根据距离计算
+            if (maxPossibleDistance === 0) {
+                // 所有均线完全重叠
+                var densityScore = 100;
+            } else {
+                // 密集度 = 1 - (实际距离比例)，值越小越密集
+                const distanceRatio = totalDistance / maxPossibleDistance;
+                // 调整算法，使结果更合理
+                var densityScore = Math.max(0, 100 - (distanceRatio * 100));
+            }
             
             // 更新密集度显示
             document.getElementById('density-score').textContent = `${densityScore.toFixed(1)}%`;

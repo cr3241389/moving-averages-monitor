@@ -151,6 +151,7 @@
                         <button onclick="quickSwitch('DOGEUSDT')" class="px-3 py-1 bg-white/60 dark:bg-slate-700/60 hover:bg-primary hover:text-white rounded-lg text-[10px] font-bold shadow-sm transition-all">DOGE</button>
                     </div>
                 </div>
+                <div class="text-[8px] text-slate-500 mt-1">提示: EMA200需要较多历史数据才能显示</div>
             </div>
             <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
@@ -291,8 +292,8 @@
                 mainChart.destroy();
             }
             
-            // 获取最后60个数据点以更好地展示趋势
-            const startIndex = Math.max(0, historicalData.length - 60);
+            // 获取最后100个数据点以确保EMA200有足够的数据点显示
+            const startIndex = Math.max(0, historicalData.length - 100);
             const labels = historicalData.slice(startIndex).map(d => d.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
             const prices = historicalData.slice(startIndex).map(d => d.close);
             const ema20 = ema20Data.slice(startIndex);

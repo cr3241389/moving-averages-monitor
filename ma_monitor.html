@@ -151,7 +151,6 @@
                         <button onclick="quickSwitch('DOGEUSDT')" class="px-3 py-1 bg-white/60 dark:bg-slate-700/60 hover:bg-primary hover:text-white rounded-lg text-[10px] font-bold shadow-sm transition-all">DOGE</button>
                     </div>
                 </div>
-                <div class="text-[8px] text-slate-500 mt-1">提示: EMA200需要较多历史数据才能显示</div>
             </div>
             <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
@@ -246,7 +245,6 @@
             ema20Data = [];
             ema60Data = [];
             ema120Data = [];
-            ema200Data = [];  // 新增EMA200
             sma20Data = [];
             sma60Data = [];
             sma120Data = [];
@@ -258,7 +256,6 @@
                 ema20Data.push(i >= 19 ? calculateEMA(subPrices, 20) : null);
                 ema60Data.push(i >= 59 ? calculateEMA(subPrices, 60) : null);
                 ema120Data.push(i >= 119 ? calculateEMA(subPrices, 120) : null);
-                ema200Data.push(i >= 199 ? calculateEMA(subPrices, 200) : null);  // 新增EMA200
                 
                 // 计算SMAs
                 sma20Data.push(i >= 19 ? calculateSMA(subPrices, 20) : null);
@@ -274,7 +271,6 @@
             const ema20 = ema20Data[ema20Data.length-1];
             const ema60 = ema60Data[ema60Data.length-1];
             const ema120 = ema120Data[ema120Data.length-1];
-            const ema200 = ema200Data[ema200Data.length-1];  // 新增EMA200
             const sma20 = sma20Data[sma20Data.length-1];
             const sma60 = sma60Data[sma60Data.length-1];
             const sma120 = sma120Data[sma120Data.length-1];
@@ -292,17 +288,26 @@
                 mainChart.destroy();
             }
             
-            // 获取最后200个数据点以确保EMA200有足够的数据点显示
-            const startIndex = Math.max(0, historicalData.length - 200);
+            // 获取最后100个数据点以更好地展示趋势
+            const startIndex = Math.max(0, historicalData.length - 100);
             const labels = historicalData.slice(startIndex).map(d => d.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
             const prices = historicalData.slice(startIndex).map(d => d.close);
             const ema20 = ema20Data.slice(startIndex);
             const ema60 = ema60Data.slice(startIndex);
             const ema120 = ema120Data.slice(startIndex);
-            const ema200 = ema200Data.slice(startIndex);  // 新增EMA200
             const sma20 = sma20Data.slice(startIndex);
             const sma60 = sma60Data.slice(startIndex);
             const sma120 = sma120Data.slice(startIndex);
+
+            // 创建一个只包含最后一个价格点的数据集用于显示当前价格
+            const currentPriceData = [];
+            for (let i = 0; i < prices.length; i++) {
+                if (i === prices.length - 1) {
+                    currentPriceData.push(prices[i]); // 只在最后位置添加价格点
+                } else {
+                    currentPriceData.push(null); // 其他位置为空
+                }
+            }
 
             mainChart = new Chart(ctx, {
                 type: 'line',
@@ -311,12 +316,15 @@
                     datasets: [
                         { 
                             label: 'Price', 
-                            data: prices, 
+                            data: currentPriceData, 
                             borderColor: '#10b981',  // 绿色
+                            backgroundColor: '#10b981',
                             borderWidth: 2, 
-                            pointRadius: 0, 
-                            tension: 0.1,
-                            spanGaps: true
+                            pointRadius: 4,  // 显示点
+                            pointBackgroundColor: '#10b981',
+                            pointHoverRadius: 6,
+                            tension: 0,
+                            spanGaps: false
                         },
                         { 
                             label: 'EMA 20', 
@@ -367,15 +375,6 @@
                             label: 'SMA 120', 
                             data: sma120, 
                             borderColor: '#c4b5fd', 
-                            borderWidth: 1, 
-                            pointRadius: 0, 
-                            tension: 0.1,
-                            spanGaps: true
-                        },
-                        { 
-                            label: 'EMA 200', 
-                            data: ema200, 
-                            borderColor: '#ef4444',  // 红色
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1,

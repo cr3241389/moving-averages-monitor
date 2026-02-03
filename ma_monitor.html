@@ -292,8 +292,8 @@
                 mainChart.destroy();
             }
             
-            // 获取最后100个数据点以确保EMA200有足够的数据点显示
-            const startIndex = Math.max(0, historicalData.length - 100);
+            // 获取最后200个数据点以确保EMA200有足够的数据点显示
+            const startIndex = Math.max(0, historicalData.length - 200);
             const labels = historicalData.slice(startIndex).map(d => d.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
             const prices = historicalData.slice(startIndex).map(d => d.close);
             const ema20 = ema20Data.slice(startIndex);

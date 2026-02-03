@@ -245,6 +245,7 @@
             ema20Data = [];
             ema60Data = [];
             ema120Data = [];
+            ema200Data = [];  // 新增EMA200
             sma20Data = [];
             sma60Data = [];
             sma120Data = [];
@@ -256,6 +257,7 @@
                 ema20Data.push(i >= 19 ? calculateEMA(subPrices, 20) : null);
                 ema60Data.push(i >= 59 ? calculateEMA(subPrices, 60) : null);
                 ema120Data.push(i >= 119 ? calculateEMA(subPrices, 120) : null);
+                ema200Data.push(i >= 199 ? calculateEMA(subPrices, 200) : null);  // 新增EMA200
                 
                 // 计算SMAs
                 sma20Data.push(i >= 19 ? calculateSMA(subPrices, 20) : null);
@@ -295,6 +297,7 @@
             const ema20 = ema20Data.slice(startIndex);
             const ema60 = ema60Data.slice(startIndex);
             const ema120 = ema120Data.slice(startIndex);
+            const ema200 = ema200Data.slice(startIndex);  // 新增EMA200
             const sma20 = sma20Data.slice(startIndex);
             const sma60 = sma60Data.slice(startIndex);
             const sma120 = sma120Data.slice(startIndex);
@@ -307,7 +310,7 @@
                         { 
                             label: 'Price', 
                             data: prices, 
-                            borderColor: '#6366f1', 
+                            borderColor: '#10b981',  // 绿色
                             borderWidth: 2, 
                             pointRadius: 0, 
                             tension: 0.1,
@@ -362,6 +365,15 @@
                             label: 'SMA 120', 
                             data: sma120, 
                             borderColor: '#c4b5fd', 
+                            borderWidth: 1, 
+                            pointRadius: 0, 
+                            tension: 0.1,
+                            spanGaps: true
+                        },
+                        { 
+                            label: 'EMA 200', 
+                            data: ema200, 
+                            borderColor: '#ef4444',  // 红色
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1,

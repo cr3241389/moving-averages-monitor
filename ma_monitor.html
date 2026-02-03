@@ -117,6 +117,16 @@
             <p class="text-slate-500 text-sm mt-1" id="header-subtitle">移动平均线分析工具</p>
         </header>
 
+        <div class="flex justify-center mb-6">
+            <div class="flex bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border dark:border-slate-800 shadow-inner max-w-md w-full">
+                <button onclick="switchInterval('15m')" id="btn-15m" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">15M</button>
+                <button onclick="switchInterval('1h')" id="btn-1h" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1H</button>
+                <button onclick="switchInterval('4h')" id="btn-4h" class="flex-1 py-2 text-xs font-bold rounded-lg active-tab">4H</button>
+                <button onclick="switchInterval('1d')" id="btn-1d" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1D</button>
+                <button onclick="switchInterval('1w')" id="btn-1w" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1W</button>
+            </div>
+        </div>
+
         <div class="card bg-monitor p-6 rounded-3xl shadow-inner">
             <div class="flex flex-col gap-3 mb-4">
                 <div class="flex justify-between items-start">
@@ -306,7 +316,7 @@
                         { 
                             label: 'EMA 20', 
                             data: ema20, 
-                            borderColor: '#3b82f6', 
+                            borderColor: '#000000', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1,
@@ -315,7 +325,7 @@
                         { 
                             label: 'EMA 60', 
                             data: ema60, 
-                            borderColor: '#ef4444', 
+                            borderColor: '#3b82f6', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1,
@@ -324,7 +334,7 @@
                         { 
                             label: 'EMA 120', 
                             data: ema120, 
-                            borderColor: '#10b981', 
+                            borderColor: '#8b5cf6', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1,
@@ -333,7 +343,7 @@
                         { 
                             label: 'SMA 20', 
                             data: sma20, 
-                            borderColor: '#8b5cf6', 
+                            borderColor: '#9ca3af', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1, 
@@ -343,7 +353,7 @@
                         { 
                             label: 'SMA 60', 
                             data: sma60, 
-                            borderColor: '#f59e0b', 
+                            borderColor: '#93c5fd', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1, 
@@ -353,7 +363,7 @@
                         { 
                             label: 'SMA 120', 
                             data: sma120, 
-                            borderColor: '#ec4899', 
+                            borderColor: '#c4b5fd', 
                             borderWidth: 1, 
                             pointRadius: 0, 
                             tension: 0.1, 

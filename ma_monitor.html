@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>均线监控 - BoxArt</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
         tailwind.config = { 
             darkMode: 'class',
@@ -90,7 +91,7 @@
         .active-tab { background: #3b82f6 !important; color: white !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .chart-container { position: relative; height: 70vh; width: 100%; }
+        .chart-container { position: relative; height: 50vh; width: 100%; }
         .card { @apply glass-card bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm; }
         .btn { @apply active:scale-95 transition-transform px-4 py-2 rounded-xl font-bold flex items-center justify-center gap-2; }
         .input-field { @apply bg-transparent border-none outline-none; }
@@ -116,22 +117,12 @@
             <p class="text-slate-500 text-sm mt-1" id="header-subtitle">移动平均线分析工具</p>
         </header>
 
-        <div class="flex justify-center mb-6">
-            <div class="flex bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border dark:border-slate-800 shadow-inner max-w-md w-full">
-                <button onclick="switchInterval('15m')" id="btn-15m" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">15M</button>
-                <button onclick="switchInterval('1h')" id="btn-1h" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1H</button>
-                <button onclick="switchInterval('4h')" id="btn-4h" class="flex-1 py-2 text-xs font-bold rounded-lg active-tab">4H</button>
-                <button onclick="switchInterval('1d')" id="btn-1d" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1D</button>
-                <button onclick="switchInterval('1w')" id="btn-1w" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500">1W</button>
-            </div>
-        </div>
-
         <div class="card bg-monitor p-6 rounded-3xl shadow-inner">
             <div class="flex flex-col gap-3 mb-4">
                 <div class="flex justify-between items-start">
                     <div class="flex flex-col">
                         <span class="text-2xl font-black flex items-center">
-                            <input id="symbol" type="text" value="BTCUSDT" class="input-field font-mono uppercase focus:outline-none w-36" placeholder="币种...">
+                            <input id="symbol" type="text" value="BTCUSDT" class="input-field font-mono uppercase focus:outline-none w-36 bg-transparent" placeholder="币种...">
                         </span>
                         <span id="priceDisplay" class="text-[11px] text-slate-500 font-mono mt-0.5">$--</span>
                     </div>
@@ -155,7 +146,6 @@
         </div>
     </div>
 
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let historicalData = [], ema20Data = [], ema60Data = [], ema120Data = [], sma20Data = [], sma60Data = [], sma120Data = [], rsiData = [], atrData = [], mainChart = null;

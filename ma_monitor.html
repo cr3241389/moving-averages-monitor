@@ -151,6 +151,23 @@
                         <button onclick="quickSwitch('DOGEUSDT')" class="px-3 py-1 bg-white/60 dark:bg-slate-700/60 hover:bg-primary hover:text-white rounded-lg text-[10px] font-bold shadow-sm transition-all">DOGE</button>
                     </div>
                 </div>
+                
+                <!-- Trend Analysis Display -->
+                <div id="trend-analysis" class="mt-3 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-500">趋势分析</span>
+                        <span id="trend-indicator" class="text-[9px] px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">-</span>
+                    </div>
+                    <div class="mt-2">
+                        <div class="flex justify-between text-[9px]">
+                            <span class="text-slate-500">密集度:</span>
+                            <span id="density-score" class="font-bold">-</span>
+                        </div>
+                        <div class="mt-1 h-1 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div id="density-bar" class="h-full bg-slate-400" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
@@ -277,7 +294,118 @@
 
             document.getElementById('priceDisplay').innerText = `$${last.close.toLocaleString()}`;
 
+            // 分析趋势
+            analyzeTrend(ema20, ema60, ema120, sma20, sma60, sma120, last.close);
+            
             updateChart();
+        }
+
+        function analyzeTrend(ema20, ema60, ema120, sma20, sma60, sma120, currentPrice) {
+            if (!ema20 || !ema60 || !ema120 || !sma20 || !sma60 || !sma120) {
+                document.getElementById('trend-indicator').textContent = '-';
+                document.getElementById('density-score').textContent = '-';
+                document.getElementById('density-bar').style.width = '0%';
+                return;
+            }
+
+            // 获取最近几期的数据来判断交叉趋势
+            const recentEma20 = ema20Data.slice(-5);
+            const recentEma60 = ema60Data.slice(-5);
+            const recentEma120 = ema120Data.slice(-5);
+            const recentSma20 = sma20Data.slice(-5);
+            const recentSma60 = sma60Data.slice(-5);
+            const recentSma120 = sma120Data.slice(-5);
+
+            // 检查是否有有效的最近数据
+            const validRecentEma20 = recentEma20.filter(val => val !== null);
+            const validRecentEma60 = recentEma60.filter(val => val !== null);
+            const validRecentEma120 = recentEma120.filter(val => val !== null);
+            const validRecentSma20 = recentSma20.filter(val => val !== null);
+            const validRecentSma60 = recentSma60.filter(val => val !== null);
+            const validRecentSma120 = recentSma120.filter(val => val !== null);
+
+            if (validRecentEma20.length < 2 || validRecentEma60.length < 2 || validRecentEma120.length < 2 ||
+                validRecentSma20.length < 2 || validRecentSma60.length < 2 || validRecentSma120.length < 2) {
+                document.getElementById('trend-indicator').textContent = '-';
+                document.getElementById('density-score').textContent = '-';
+                document.getElementById('density-bar').style.width = '0%';
+                return;
+            }
+
+            // 计算均线密集度（越接近说明越密集）
+            const currentValues = [ema20, ema60, ema120, sma20, sma60, sma120].filter(val => val !== null);
+            if (currentValues.length < 6) {
+                document.getElementById('trend-indicator').textContent = '-';
+                document.getElementById('density-score').textContent = '-';
+                document.getElementById('density-bar').style.width = '0%';
+                return;
+            }
+
+            const avgValue = currentValues.reduce((sum, val) => sum + val, 0) / currentValues.length;
+            const variance = currentValues.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) / currentValues.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // 密集度评分（0-100），标准差越小越密集
+            const densityScore = Math.max(0, Math.min(100, (1 - stdDev / avgValue) * 1000));
+            
+            // 更新密集度显示
+            document.getElementById('density-score').textContent = `${densityScore.toFixed(1)}%`;
+            document.getElementById('density-bar').style.width = `${densityScore}%`;
+            
+            // 根据最近数据判断交叉趋势
+            let recentTrend = '';
+            let crossCount = 0;
+            
+            // 检查最近几期的交叉情况
+            for (let i = 1; i < 5; i++) {
+                if (recentEma20[i] && recentEma20[i-1] && 
+                    recentEma60[i] && recentEma60[i-1]) {
+                    
+                    // EMA20 vs EMA60 交叉检测
+                    const prevCross = recentEma20[i-1] > recentEma60[i-1];
+                    const currCross = recentEma20[i] > recentEma60[i];
+                    
+                    if (prevCross !== currCross) {
+                        crossCount++;
+                    }
+                }
+            }
+            
+            // 判断总体趋势（价格相对于短期均线的位置）
+            const aboveShortTerm = currentPrice > ema20 && currentPrice > sma20;
+            const aboveMidTerm = currentPrice > ema60 && currentPrice > sma60;
+            const aboveLongTerm = currentPrice > ema120 && currentPrice > sma120;
+            
+            const aboveCount = (aboveShortTerm ? 1 : 0) + (aboveMidTerm ? 1 : 0) + (aboveLongTerm ? 1 : 0);
+            
+            // 判断趋势
+            if (densityScore > 70 && crossCount > 1) {
+                // 高密集度且有多次交叉，可能是震荡
+                recentTrend = '震荡';
+            } else if (aboveCount >= 2) {
+                // 价格在多数均线上方，看涨
+                recentTrend = '多头';
+            } else if (aboveCount <= 0) {
+                // 价格在多数均线下方，看空
+                recentTrend = '空头';
+            } else {
+                recentTrend = '-';
+            }
+            
+            // 更新趋势指示器
+            const trendIndicator = document.getElementById('trend-indicator');
+            trendIndicator.textContent = recentTrend;
+            
+            // 根据趋势设置颜色
+            if (recentTrend === '多头') {
+                trendIndicator.className = 'text-[9px] px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300';
+            } else if (recentTrend === '空头') {
+                trendIndicator.className = 'text-[9px] px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300';
+            } else if (recentTrend === '震荡') {
+                trendIndicator.className = 'text-[9px] px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300';
+            } else {
+                trendIndicator.className = 'text-[9px] px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500';
+            }
         }
 
         function updateChart() {
